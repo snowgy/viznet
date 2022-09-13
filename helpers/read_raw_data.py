@@ -15,21 +15,21 @@ from collections import OrderedDict
 import argparse
 import gzip
 import json
-import chardet
+# import chardet
 import traceback
 
 import numpy as np
 import pandas as pd
-from feature_extraction.general_helpers import clean_chunk
-from feature_extraction.type_detection import detect_field_type, data_type_to_general_type, data_types, general_types
+# from feature_extraction.general_helpers import clean_chunk
+# from feature_extraction.type_detection import detect_field_type, data_type_to_general_type, data_types, general_types
 
-raw_data_dir = '../raw'
+raw_data_dir = '/home/cc/my_mounting_point/dataset_storage'
 
 data_dirs = {
     'plotly': join(raw_data_dir, 'plotly'),
     'manyeyes': join(raw_data_dir, 'manyeyes'),
     'webtables': join(raw_data_dir, 'webtables'),
-    'opendata': join(raw_data_dir, 'opendata')
+    'opendata': join(raw_data_dir, 'open_data_portals')
 }
 
 
@@ -124,68 +124,68 @@ def get_manyeyes_dfs(exact_num_fields=None, min_fields=None, max_fields=None):
             except Exception as e:
                 continue
 
-def get_webtables_dfs(exact_num_fields=None, min_fields=None, max_fields=None):
-    corpus = 'webtables'
-    base_dir = data_dirs[corpus]    
-    files = []
-    for sub_dir in listdir(base_dir):
-        if sub_dir.endswith(tuple(['.gz', '.lst', '.html'])): continue
-        json_files = listdir(join(base_dir, sub_dir, 'warc'))
-        files.append([ base_dir, sub_dir, json_files ])
+# def get_webtables_dfs(exact_num_fields=None, min_fields=None, max_fields=None):
+#     corpus = 'webtables'
+#     base_dir = data_dirs[corpus]    
+#     files = []
+#     for sub_dir in listdir(base_dir):
+#         if sub_dir.endswith(tuple(['.gz', '.lst', '.html'])): continue
+#         json_files = listdir(join(base_dir, sub_dir, 'warc'))
+#         files.append([ base_dir, sub_dir, json_files ])
 
-    for (base_dir, sub_dir, json_files) in files:
-        for i, file_name in enumerate(json_files):
-            full_file_path = join(base_dir, sub_dir, 'warc', file_name)
-            with gzip.open(full_file_path, 'rb') as f_in:
+#     for (base_dir, sub_dir, json_files) in files:
+#         for i, file_name in enumerate(json_files):
+#             full_file_path = join(base_dir, sub_dir, 'warc', file_name)
+#             with gzip.open(full_file_path, 'rb') as f_in:
 
-                locator = join(sub_dir, 'warc', file_name)
-                for line_count, dataset in enumerate(f_in):
-                    try:
-                        data = json.loads(dataset.decode('utf-8'))
-                    except UnicodeDecodeError:
-                        encoding = chardet.detect(dataset)['encoding']
-                        try:
-                            data = json.loads(dataset.decode(encoding))
-                        except Exception as e:
-                            print('Cannot parse', e)
-                    try:
-                        if data['hasHeader'] and (data['headerPosition'] == 'FIRST_ROW'):
-                            header_row_index = data.get('headerRowIndex', 0)
-                            data_as_dict = OrderedDict()
-                            for raw_cols in data['relation']:
-                                header_row = raw_cols[header_row_index]
-                                raw_cols.pop(header_row_index)
+#                 locator = join(sub_dir, 'warc', file_name)
+#                 for line_count, dataset in enumerate(f_in):
+#                     try:
+#                         data = json.loads(dataset.decode('utf-8'))
+#                     except UnicodeDecodeError:
+#                         encoding = chardet.detect(dataset)['encoding']
+#                         try:
+#                             data = json.loads(dataset.decode(encoding))
+#                         except Exception as e:
+#                             print('Cannot parse', e)
+#                     try:
+#                         if data['hasHeader'] and (data['headerPosition'] == 'FIRST_ROW'):
+#                             header_row_index = data.get('headerRowIndex', 0)
+#                             data_as_dict = OrderedDict()
+#                             for raw_cols in data['relation']:
+#                                 header_row = raw_cols[header_row_index]
+#                                 raw_cols.pop(header_row_index)
 
-                                parsed_values = pd.Series([ None if (v == '-') else v for v in raw_cols ])
-                                try:
-                                    parsed_values = pd.to_numeric(parsed_values, errors='raise')
-                                except:
-                                    pass
-                                #parsed_values = parsed_values.replace(value='-', None)
-                                data_as_dict[header_row] = parsed_values
+#                                 parsed_values = pd.Series([ None if (v == '-') else v for v in raw_cols ])
+#                                 try:
+#                                     parsed_values = pd.to_numeric(parsed_values, errors='raise')
+#                                 except:
+#                                     pass
+#                                 #parsed_values = parsed_values.replace(value='-', None)
+#                                 data_as_dict[header_row] = parsed_values
 
-                            dataset_id = '{}-{}'.format(data['pageTitle'], data['tableNum'])    
-                            df = pd.DataFrame(data_as_dict)
+#                             dataset_id = '{}-{}'.format(data['pageTitle'], data['tableNum'])    
+#                             df = pd.DataFrame(data_as_dict)
 
-                            num_fields = len(df.columns)
+#                             num_fields = len(df.columns)
 
-                            if exact_num_fields:
-                                if num_fields != exact_num_fields: continue
-                            if min_fields:
-                                if num_fields < min_fields: continue
-                            if max_fields:
-                                if num_fields > max_fields: continue
+#                             if exact_num_fields:
+#                                 if num_fields != exact_num_fields: continue
+#                             if min_fields:
+#                                 if num_fields < min_fields: continue
+#                             if max_fields:
+#                                 if num_fields > max_fields: continue
 
-                            result = {
-                                'df': df,
-                                'dataset_id': dataset_id,
-                                'locator': locator
-                            }
-                            yield result
+#                             result = {
+#                                 'df': df,
+#                                 'dataset_id': dataset_id,
+#                                 'locator': locator
+#                             }
+#                             yield result
 
-                    except Exception as e:
-                        print(e)
-                        continue      
+#                     except Exception as e:
+#                         print(e)
+#                         continue      
 
 def get_opendata_dfs(exact_num_fields=None, min_fields=None, max_fields=None):
     corpus = 'opendata'
@@ -254,9 +254,17 @@ def get_opendata_dfs(exact_num_fields=None, min_fields=None, max_fields=None):
                         print(e)
                         break
 
-get_dfs_by_corpus = {
-    'plotly': get_plotly_dfs,
-    'manyeyes': get_manyeyes_dfs,
-    'webtables': get_webtables_dfs,
-    'opendata': get_opendata_dfs
-}
+# get_dfs_by_corpus = {
+#     'plotly': get_plotly_dfs,
+#     'manyeyes': get_manyeyes_dfs,
+#     'webtables': get_webtables_dfs,
+#     'opendata': get_opendata_dfs
+# }
+
+i = 0
+for obj in get_opendata_dfs():
+    if i == 10:
+        break
+    df = obj['df']
+    print(obj['dataset_id'])
+    print(df.head(2))
